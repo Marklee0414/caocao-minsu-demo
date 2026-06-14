@@ -31,7 +31,7 @@ from data_manager import (
     calculate_commission_v2, ORDER_STATUS_LABELS,
     ORDER_STATUS_CHOICES
 )
-from ai_parser import parse_message_ai, STANDARD_PRICES
+from ai_parser import parse_message_ai, parse_message_batch_ai, STANDARD_PRICES
 
 # ============================================================
 # 页面配置
