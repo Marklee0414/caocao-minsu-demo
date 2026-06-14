@@ -28,12 +28,42 @@ from typing import Optional, List, Dict
 # 配置
 # ============================================================
 
-LLM_CONFIG = {
-    "api_key": os.environ.get("LLM_API_KEY", ""),
-    "base_url": os.environ.get("LLM_BASE_URL", "https://api.deepseek.com/v1"),
-    "model": os.environ.get("LLM_MODEL", "deepseek-chat"),
-    "temperature": 0.1,
-}
+# ============================================================
+# LLM 配置（支持多种方式传入）
+# ============================================================
+# 优先级：
+#   1. 显式传入的 api_key 参数（最高优先级）
+#   2. st.secrets["LLM_API_KEY"]（Streamlit Cloud 部署时）
+#   3. os.environ["LLM_API_KEY"]（本地环境变量）
+#
+# DeepSeek 官方 API：
+#   base_url: https://api.deepseek.com
+#   model:    deepseek-chat
+# ============================================================
+
+def get_llm_config(api_key_override: str = "") -> dict:
+    """获取 LLM 配置，支持从多个来源读取 API Key"""
+    api_key = api_key_override
+    
+    if not api_key:
+        try:
+            import streamlit as st
+            api_key = st.secrets.get("LLM_API_KEY", "")
+        except (ImportError, RuntimeError):
+            pass
+    
+    if not api_key:
+        api_key = os.environ.get("LLM_API_KEY", "")
+    
+    return {
+        "api_key": api_key,
+        "base_url": os.environ.get("LLM_BASE_URL", "https://api.deepseek.com"),
+        "model": os.environ.get("LLM_MODEL", "deepseek-chat"),
+        "temperature": 0.1,
+    }
+
+# 旧式直接引用兼容（被 parse_by_llm 内部引用会自动抛 KeyError 从而走回退逻辑）
+LLM_CONFIG_CACHED = get_llm_config()
 
 SERVICE_TYPE_MAP = {
     "全身按摩": ["全身按摩", "全身", "全按", "全身推拿", "推拿", "body massage", "full body", "fullbody"],
@@ -138,11 +168,14 @@ def parse_by_llm(text: str) -> Optional[List[Dict]]:
     """
     调用大模型 API 进行批量模糊语义解析
     
+    每次调用时重新读取配置，确保 Streamlit Cloud 的 st.secrets 能生效。
+    
     Returns:
         List[Dict] 可能包含 0~N 条解析记录
         或 None（API 调用失败）
     """
-    if not LLM_CONFIG["api_key"]:
+    config = get_llm_config()
+    if not config["api_key"]:
         return None
     
     escaped_text = text.replace('"', '\\"').replace('{', '{{').replace('}', '}}')
@@ -175,20 +208,20 @@ def parse_by_llm(text: str) -> Optional[List[Dict]]:
         import urllib.request
         import urllib.error
         
-        api_url = f"{LLM_CONFIG['base_url'].rstrip('/')}/chat/completions"
+        api_url = f"{config['base_url'].rstrip('/')}/chat/completions"
         payload = json.dumps({
-            "model": LLM_CONFIG["model"],
+            "model": config["model"],
             "messages": [
                 {"role": "system", "content": PARSE_SYSTEM_PROMPT},
                 {"role": "user", "content": prompt}
             ],
-            "temperature": LLM_CONFIG["temperature"],
-            "max_tokens": 800  # 批量解析需要更多 token
+            "temperature": config["temperature"],
+            "max_tokens": 800
         }).encode("utf-8")
         
         headers = {
             "Content-Type": "application/json",
-            "Authorization": f"Bearer {LLM_CONFIG['api_key']}"
+            "Authorization": f"Bearer {config['api_key']}"
         }
         
         req = urllib.request.Request(api_url, data=payload, headers=headers, method="POST")
@@ -390,10 +423,13 @@ def test_ai_parser():
     print(f"   成功率: {results['success']}/{results['total']}")
     print(f"{'='*60}")
     
-    if not LLM_CONFIG["api_key"]:
+    cfg = get_llm_config()
+    if not cfg["api_key"]:
         print("\n💡 提示：未设置 LLM_API_KEY，AI 解析未启用。")
         print("   设置后 AI 可处理口语化、错别字、多人多笔场景。")
         print("   PowerShell: $env:LLM_API_KEY=\"sk-你的key\"\n")
+    else:
+        print(f"   ✅ LLM 已配置: {cfg['model']} @ {cfg['base_url']}\n")
 
 
 if __name__ == "__main__":

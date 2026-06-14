@@ -292,28 +292,42 @@ def main():
     
     if st.button("🧪 测试解析", type="secondary"):
         if test_text:
-            result = parse_message_ai(test_text)
-            if result:
-                st.success("✅ 解析成功！")
+            try:
+                # 诊断：检查 LLM 配置状态
+                from ai_parser import get_llm_config
+                cfg_status = get_llm_config()
+                has_api_key = bool(cfg_status["api_key"])
+                st.caption(f"诊断: API Key={'✅ 已配置' if has_api_key else '❌ 未配置'}, "
+                          f"模型={cfg_status['model']}, "
+                          f"接口={cfg_status['base_url']}")
                 
-                col1, col2 = st.columns(2)
-                with col1:
-                    st.markdown(f"**客人：** {result['guest_name']}")
-                    st.markdown(f"**服务项目：** {result['service_type']}")
-                with col2:
-                    st.markdown(f"**时长：** {result['duration']}")
-                    st.markdown(f"**金额：** {result['amount']:.0f} 迪拉姆")
-                
-                std_price = STANDARD_PRICES.get(result["service_type"], 0)
-                if std_price > 0 and result["amount"] > std_price * 1.3:
-                    st.warning(f"⚠️ 金额 {result['amount']:.0f} 超过标准价 {std_price}，将被标记为异常")
+                result = parse_message_ai(test_text)
+                if result:
+                    st.success("✅ 解析成功！")
+                    
+                    col1, col2 = st.columns(2)
+                    with col1:
+                        st.markdown(f"**客人：** {result['guest_name']}")
+                        st.markdown(f"**服务项目：** {result['service_type']}")
+                    with col2:
+                        st.markdown(f"**时长：** {result['duration']}")
+                        st.markdown(f"**金额：** {result['amount']:.0f} 迪拉姆")
+                    
+                    std_price = STANDARD_PRICES.get(result["service_type"], 0)
+                    if std_price > 0 and result["amount"] > std_price * 1.3:
+                        st.warning(f"⚠️ 金额 {result['amount']:.0f} 超过标准价 {std_price}，将被标记为异常")
+                    else:
+                        st.info(f"✅ 金额在正常范围内（标准价 {std_price:.0f} 迪拉姆）")
+                    
+                    with st.expander("查看原始解析数据"):
+                        st.json(result)
                 else:
-                    st.info(f"✅ 金额在正常范围内（标准价 {std_price:.0f} 迪拉姆）")
-                
-                with st.expander("查看原始解析数据"):
-                    st.json(result)
-            else:
-                st.error("❌ 解析失败，请检查消息格式")
+                    st.error(f"❌ 解析失败，请检查消息格式（LLM API Key {'已配置但返回空' if has_api_key else '未配置，降级到正则解析失败'})")
+                    st.info("💡 提示：标准格式消息如「客人：Ahmed / 项目：全身按摩 / 时长：60分钟 / 金额：300迪拉姆」可被正则解析，不依赖 API Key。口语化消息需要配置 LLM_API_KEY。")
+            except Exception as e:
+                st.error(f"❌ 解析失败！错误详情: {str(e)}")
+                import traceback
+                st.code(traceback.format_exc(), language="python")
     
     # 底部
     st.markdown("---")
