@@ -38,7 +38,7 @@ from typing import Optional, List, Dict
 #
 # DeepSeek 官方 API：
 #   base_url: https://api.deepseek.com
-#   model:    deepseek-chat
+#   model:    deepseek-v4-flash
 # ============================================================
 
 def get_llm_config(api_key_override: str = "") -> dict:
@@ -58,7 +58,7 @@ def get_llm_config(api_key_override: str = "") -> dict:
     return {
         "api_key": api_key,
         "base_url": os.environ.get("LLM_BASE_URL", "https://api.deepseek.com"),
-        "model": os.environ.get("LLM_MODEL", "deepseek-chat"),
+        "model": os.environ.get("LLM_MODEL", "deepseek-v4-flash"),
         "temperature": 0.1,
     }
 
