@@ -51,7 +51,7 @@ def init_database_v2(db_path: Optional[Path] = None) -> sqlite3.Connection:
     if db_path is None:
         db_path = OUTPUT_DIR / "caocao_data_v2.db"
     
-    conn = sqlite3.connect(str(db_path))
+    conn = sqlite3.connect(str(db_path), check_same_thread=False)
     cursor = conn.cursor()
     
     # 员工表
