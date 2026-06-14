@@ -103,8 +103,14 @@ st.markdown("""
 
 @st.cache_resource
 def get_db():
-    """获取数据库连接（缓存避免重复初始化）"""
-    return init_database_v2()
+    """获取数据库连接（缓存避免重复初始化）
+    
+    check_same_thread=False 确保在 Streamlit 多线程环境下不会报错
+    """
+    import sqlite3
+    conn = init_database_v2()
+    conn.execute("SELECT 1")  # 验证连接可用
+    return conn
 
 
 def load_demo_data(conn):
