@@ -1,0 +1,12 @@
+# 曹操民宿 · 自动记账提成系统 依赖清单
+# 安装：pip install -r requirements.txt
+
+# 核心依赖
+streamlit>=1.28.0       # 前端展示（网页/手机端）
+pandas>=2.0.0           # 数据处理
+
+# AI 解析（可选，不安装也能用正则降级）
+# 不需要额外依赖，使用 Python 内置 urllib
+
+# 数据库
+# 使用 Python 内置 sqlite3，无需额外安装

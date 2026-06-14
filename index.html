@@ -1,0 +1,257 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>曹操民宿 · 自动记账提成系统 Demo</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: -apple-system, 'Segoe UI', 'PingFang SC', 'Microsoft YaHei', sans-serif; background: #f0f2f5; color: #333; line-height: 1.6; }
+        .container { max-width: 960px; margin: 0 auto; padding: 20px; }
+        
+        /* Header */
+        .header { background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%); color: #fff; padding: 40px; border-radius: 16px; margin-bottom: 24px; text-align: center; }
+        .header h1 { font-size: 28px; margin-bottom: 8px; }
+        .header .subtitle { font-size: 16px; opacity: 0.8; }
+        .header .run-btn { display: inline-block; margin-top: 16px; padding: 12px 32px; background: #e94560; color: #fff; border: none; border-radius: 8px; font-size: 16px; cursor: pointer; text-decoration: none; transition: all 0.3s; }
+        .header .run-btn:hover { background: #c73650; transform: translateY(-2px); box-shadow: 0 4px 15px rgba(233,69,96,0.4); }
+        
+        /* Cards */
+        .card { background: #fff; border-radius: 12px; padding: 24px; margin-bottom: 20px; box-shadow: 0 2px 8px rgba(0,0,0,0.06); }
+        .card h2 { font-size: 20px; margin-bottom: 16px; padding-bottom: 12px; border-bottom: 2px solid #f0f2f5; }
+        .card h2 .emoji { margin-right: 8px; }
+        
+        /* Grid */
+        .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+        .grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 16px; }
+        @media (max-width: 720px) { .grid-2, .grid-3 { grid-template-columns: 1fr; } }
+        
+        /* Stats */
+        .stat-card { text-align: center; padding: 20px; background: #f8f9fa; border-radius: 10px; }
+        .stat-card .num { font-size: 32px; font-weight: 700; color: #e94560; }
+        .stat-card .label { font-size: 14px; color: #666; margin-top: 4px; }
+        
+        /* Terminal */
+        .terminal { background: #1a1a2e; color: #00ff88; padding: 20px; border-radius: 10px; font-family: 'Cascadia Code', 'Fira Code', 'Consolas', monospace; font-size: 14px; line-height: 1.8; overflow-x: auto; white-space: pre-wrap; }
+        .terminal .step { color: #ffd700; }
+        .terminal .ok { color: #00ff88; }
+        .terminal .alert { color: #ff4444; font-weight: bold; }
+        .terminal .dim { color: #888; }
+        
+        /* Table */
+        table { width: 100%; border-collapse: collapse; }
+        th, td { padding: 12px 16px; text-align: left; border-bottom: 1px solid #f0f2f5; }
+        th { background: #f8f9fa; font-weight: 600; color: #555; }
+        tr:hover { background: #f8f9fa; }
+        .highlight { background: #fff3cd; }
+        .amount { font-weight: 600; color: #e94560; }
+        .green { color: #00a854; }
+        
+        /* Flow */
+        .flow { display: flex; align-items: center; justify-content: center; gap: 8px; flex-wrap: wrap; padding: 16px 0; }
+        .flow-step { background: #e8f4fd; color: #0f3460; padding: 10px 18px; border-radius: 20px; font-size: 14px; font-weight: 500; }
+        .flow-arrow { font-size: 20px; color: #999; }
+        
+        /* Alert box */
+        .alert-box { padding: 16px 20px; border-radius: 10px; margin: 12px 0; }
+        .alert-danger { background: #fff5f5; border-left: 4px solid #ff4444; }
+        .alert-success { background: #f0fff4; border-left: 4px solid #00a854; }
+        .alert-info { background: #e8f4fd; border-left: 4px solid #0f3460; }
+        
+        .tag { display: inline-block; padding: 2px 10px; border-radius: 12px; font-size: 12px; font-weight: 600; }
+        .tag-red { background: #ffe0e0; color: #cc0000; }
+        .tag-yellow { background: #fff3cd; color: #856404; }
+        .tag-green { background: #d4edda; color: #155724; }
+        
+        .footer { text-align: center; color: #999; font-size: 13px; padding: 20px; }
+    </style>
+</head>
+<body>
+<div class="container">
+    
+    <!-- Header -->
+    <div class="header">
+        <h1>🏠 曹操民宿 · 自动记账提成系统</h1>
+        <p class="subtitle">用微信群消息 + Vibe Coding 解决远程管理信任漏洞</p>
+        <a class="run-btn" href="#" onclick="event.preventDefault(); scrollTo(0,document.getElementById('result').offsetTop-20)">▶ 查看演示效果</a>
+        <p style="margin-top:12px; font-size:13px; opacity:0.6;">运行命令：<code style="background:rgba(255,255,255,0.15); padding:2px 8px; border-radius:4px;">python caocao_demo.py</code></p>
+    </div>
+    
+    <!-- Case Story -->
+    <div class="card">
+        <h2><span class="emoji">📖</span>案例背景</h2>
+        <div class="alert-box alert-info">
+            <strong>👨‍💼 老板曹操</strong> 常驻巴塞罗那，在马拉喀什经营一家民宿。<br>
+            <strong>👤 员工</strong> 专职按摩师（阿里、哈桑），按次计件，40%提成。<br>
+            <strong>🔓 信任漏洞</strong> 员工虚报服务次数和金额，老板远程无法核实。<br>
+            <strong>💡 解决方案</strong> 每次服务后在微信群按固定格式发消息，系统自动记账算提成。
+        </div>
+    </div>
+    
+    <!-- Workflow -->
+    <div class="card">
+        <h2><span class="emoji">⚙️</span>系统工作流</h2>
+        <div class="flow">
+            <span class="flow-step">📱 微信群发消息</span>
+            <span class="flow-arrow">→</span>
+            <span class="flow-step">🔍 正则解析</span>
+            <span class="flow-arrow">→</span>
+            <span class="flow-step">🗄️ SQLite 存储</span>
+            <span class="flow-arrow">→</span>
+            <span class="flow-step">🧮 自动算提成</span>
+            <span class="flow-arrow">→</span>
+            <span class="flow-step">🚨 异常检测</span>
+            <span class="flow-arrow">→</span>
+            <span class="flow-step">📄 生成报告</span>
+        </div>
+    </div>
+    
+    <!-- Stats -->
+    <div class="grid-3">
+        <div class="stat-card">
+            <div class="num">42</div>
+            <div class="label">📨 群消息解析</div>
+        </div>
+        <div class="stat-card">
+            <div class="num">12,150</div>
+            <div class="label">💰 月总营收（迪拉姆）</div>
+        </div>
+        <div class="stat-card">
+            <div class="num">1</div>
+            <div class="label">🚨 异常记录检出</div>
+        </div>
+    </div>
+    
+    <!-- Demo Output -->
+    <div class="card" id="result">
+        <h2><span class="emoji">🖥️</span>运行结果</h2>
+        <div class="terminal">
+==================================================
+<span class="step">曹操民宿 · 自动记账提成系统</span>
+==================================================
+
+[Step 1] 获取微信群消息...
+  <span class="ok">-> 共 42 条消息</span>
+
+[Step 2] 初始化数据库...
+
+[Step 3] 解析并存入数据库...
+  <span class="ok">-> 成功解析 42/42 条</span>
+
+[Step 4] 自动计算提成...
+  <span class="dim">-> 阿里: 23次, 8100.0迪拉姆, 提成3240.0迪拉姆</span>
+  <span class="dim">-> 哈桑: 13次, 4050.0迪拉姆, 提成1417.5迪拉姆</span>
+  <span class="ok">-> 总收入: 12150.0迪拉姆 | 净收入: 7492.5迪拉姆</span>
+
+[Step 5] <span class="alert">异常检测...</span>
+  <span class="alert">-> 🚨 [高] 阿里 - 2026-06-22 - 全身按摩 - 800迪拉姆 (标准价300迪拉姆)</span>
+
+[Step 6] 生成月度报告...
+  <span class="ok">-> 结算报告已生成</span>
+
+==================================================
+<span class="step">全部完成！</span>
+==================================================
+        </div>
+    </div>
+    
+    <!-- Commission Table -->
+    <div class="card">
+        <h2><span class="emoji">📊</span>提成结算明细</h2>
+        <table>
+            <thead>
+                <tr>
+                    <th>员工</th>
+                    <th>提成比例</th>
+                    <th>服务次数</th>
+                    <th>服务总额</th>
+                    <th>应得提成</th>
+                    <th>状态</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td><strong>阿里</strong> <span style="font-size:12px;color:#999;">（老员工）</span></td>
+                    <td>40%</td>
+                    <td>23 次</td>
+                    <td class="amount">8,100 迪拉姆</td>
+                    <td class="amount">3,240 迪拉姆</td>
+                    <td><span class="tag tag-yellow">⚠️ 有虚报</span></td>
+                </tr>
+                <tr>
+                    <td><strong>哈桑</strong> <span style="font-size:12px;color:#999;">（新员工）</span></td>
+                    <td>35%</td>
+                    <td>13 次</td>
+                    <td class="amount">4,050 迪拉姆</td>
+                    <td class="amount">1,418 迪拉姆</td>
+                    <td><span class="tag tag-green">✅ 正常</span></td>
+                </tr>
+                <tr style="background:#f8f9fa; font-weight:600;">
+                    <td colspan="2"><strong>合计</strong></td>
+                    <td><strong>36 次</strong></td>
+                    <td class="amount"><strong>12,150 迪拉姆</strong></td>
+                    <td class="amount"><strong>4,658 迪拉姆</strong></td>
+                    <td><span class="tag tag-green">公司净收 7,492 迪拉姆</span></td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+    
+    <!-- Anomaly Detection -->
+    <div class="card">
+        <h2><span class="emoji">🔍</span>异常检测报告</h2>
+        <div class="alert-box alert-danger">
+            <strong>🚨 高优先级异常：</strong> 阿里于 <strong>2026年6月22日</strong> 为客人 "VIP" 进行全身按摩，申报金额 <strong>800 迪拉姆</strong>。<br>
+            <span style="color:#666;">📌 标准价：全身按摩 300 迪拉姆 → 虚报率 <strong>167%</strong></span>
+        </div>
+        <div style="margin-top:12px;">
+            <p style="font-size:14px; color:#666;">💡 <strong>系统自动标记</strong>：超过标准价30%为黄色预警，超过50%为红色异常。</p>
+            <p style="font-size:14px; color:#666;">💡 如果老板看到这笔记录，可以在群里直接问："阿里，6月22日的VIP客人是谁？为什么全身按摩收了800？"</p>
+        </div>
+    </div>
+    
+    <!-- Key Insight -->
+    <div class="card">
+        <h2><span class="emoji">💎</span>核心商业逻辑</h2>
+        <div class="grid-2">
+            <div class="alert-box alert-success">
+                <strong>✅ 为什么有效？</strong>
+                <ol style="margin-top:8px; padding-left:20px;">
+                    <li>群消息天然公开透明</li>
+                    <li>格式标准化 → 零误差解析</li>
+                    <li>自动算提成 → 无需人工对账</li>
+                    <li>异常自动报警 → 虚报无处可藏</li>
+                </ol>
+            </div>
+            <div class="alert-box alert-info">
+                <strong>💡 能迁移到什么场景？</strong>
+                <ul style="margin-top:8px; padding-left:20px;">
+                    <li>家政保洁计件</li>
+                    <li>上门维修提成</li>
+                    <li>外卖骑手结算</li>
+                    <li>任何"远程+计件"场景</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+    
+    <!-- How to run -->
+    <div class="card">
+        <h2><span class="emoji">▶️</span>如何自己运行</h2>
+        <div class="terminal" style="background:#2d2d3f; color:#e0e0e0; font-size:13px;">
+            <span style="color:#888;"># 两步运行</span>
+            <span style="color:#ffd700;">$</span> cd d:\Projects\APUS
+            <span style="color:#ffd700;">$</span> python caocao_minsu_demo/caocao_demo.py
+            
+            <span style="color:#888; display:block; margin-top:12px;"># 或者直接用 VS Code 打开项目，按 F5 运行</span>
+            <span style="color:#888;"># 运行后自动生成：运行日志.txt + 结算报告_2026年6月.md</span>
+        </div>
+    </div>
+    
+    <div class="footer">
+        曹操民宿 · 自动记账提成系统 Demo &bull; Powered by Cline &bull; 2026
+    </div>
+    
+</div>
+</body>
+</html>
